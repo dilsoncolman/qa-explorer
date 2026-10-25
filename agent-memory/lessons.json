@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "lessons": [
+    {
+      "id": "L-001",
+      "status": "approved",
+      "title": "Reject an empty task title before creating a task",
+      "match": {
+        "testTitlePrefix": "TC-02",
+        "keywords": ["expected: 0", "received: 1"]
+      },
+      "lesson": "For a required text field, trim the input and reject an empty value before adding a record. Verify that no list item is created and an accessible validation message is shown.",
+      "evidence": "docs/bug-reports/BUG-001-empty-task-title.md",
+      "verification": "TC-02 passed after the submit handler added the validation check."
+    }
+  ]
+}

@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Board | QA Explorer</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #172033;
+        background: #f3f5fa;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        padding: 48px 20px;
+      }
+
+      main {
+        width: min(100%, 680px);
+        margin: 0 auto;
+        padding: 36px;
+        border: 1px solid #e1e6f0;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 18px 50px rgb(30 45 80 / 8%);
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: #5669d8;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1 { margin: 0; font-size: clamp(2rem, 5vw, 2.8rem); }
+      .intro { margin: 10px 0 28px; color: #64708a; }
+      label { display: block; margin-bottom: 8px; font-weight: 650; }
+
+      .form-row {
+        display: flex;
+        gap: 10px;
+      }
+
+      input[type="text"], select {
+        min-height: 46px;
+        border: 1px solid #cdd4e2;
+        border-radius: 10px;
+        background: #fff;
+        color: inherit;
+        font: inherit;
+      }
+
+      input[type="text"] { flex: 1; min-width: 0; padding: 0 13px; }
+      select { padding: 0 36px 0 12px; }
+
+      button {
+        min-height: 46px;
+        padding: 0 18px;
+        border: 0;
+        border-radius: 10px;
+        background: #4558c9;
+        color: #fff;
+        font: inherit;
+        font-weight: 650;
+        cursor: pointer;
+      }
+
+      button:hover { background: #3547b3; }
+      input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid #9ba8ff; outline-offset: 2px; }
+      #validation-message { min-height: 1.4em; margin: 8px 0 0; color: #b42318; }
+
+      .list-header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-top: 28px;
+        padding-top: 22px;
+        border-top: 1px solid #e8ebf2;
+      }
+
+      .list-header label { margin: 0; }
+      ul { display: grid; gap: 10px; margin: 18px 0 0; padding: 0; list-style: none; }
+
+      li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 54px;
+        padding: 12px 14px;
+        border: 1px solid #e2e7f0;
+        border-radius: 12px;
+        background: #fbfcff;
+      }
+
+      li input { width: 18px; height: 18px; accent-color: #4558c9; }
+      .completed { color: #778198; text-decoration: line-through; }
+      #empty-state { margin: 20px 0 0; color: #778198; text-align: center; }
+
+      @media (max-width: 520px) {
+        body { padding: 20px 12px; }
+        main { padding: 24px 18px; }
+        .form-row { align-items: stretch; flex-direction: column; }
+        .list-header { align-items: stretch; flex-direction: column; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">QA Explorer training app</p>
+      <h1>Task Board</h1>
+      <p class="intro">Create tasks, mark them complete, and filter the list.</p>
+
+      <form id="task-form">
+        <label for="task-title">Task title</label>
+        <div class="form-row">
+          <input id="task-title" name="taskTitle" type="text" placeholder="For example, review the test plan" />
+          <button type="submit">Add task</button>
+        </div>
+        <p id="validation-message" role="alert"></p>
+      </form>
+
+      <section aria-label="Task list">
+        <div class="list-header">
+          <div>
+            <label for="task-filter">Filter tasks</label>
+            <select id="task-filter">
+              <option value="all">All tasks</option>
+              <option value="active">Active tasks</option>
+              <option value="completed">Completed tasks</option>
+            </select>
+          </div>
+        </div>
+        <ul id="task-list" aria-live="polite"></ul>
+        <p id="empty-state">No tasks yet.</p>
+      </section>
+    </main>
+
+    <script>
+      const form = document.querySelector('#task-form');
+      const titleInput = document.querySelector('#task-title');
+      const validationMessage = document.querySelector('#validation-message');
+      const filterSelect = document.querySelector('#task-filter');
+      const taskList = document.querySelector('#task-list');
+      const emptyState = document.querySelector('#empty-state');
+      const tasks = [];
+      let nextTaskId = 1;
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const title = titleInput.value.trim();
+        if (title === '') {
+          validationMessage.textContent = 'Enter a task title.';
+          return;
+        }
+        tasks.push({ id: nextTaskId++, title, completed: false });
+        titleInput.value = '';
+        validationMessage.textContent = '';
+        renderTasks();
+        titleInput.focus();
+      });
+
+      filterSelect.addEventListener('change', renderTasks);
+
+      function renderTasks() {
+        const selectedFilter = filterSelect.value;
+        const visibleTasks = tasks.filter((task) => {
+          if (selectedFilter === 'active') return !task.completed;
+          if (selectedFilter === 'completed') return task.completed;
+          return true;
+        });
+
+        taskList.replaceChildren();
+
+        for (const task of visibleTasks) {
+          const item = document.createElement('li');
+          const checkbox = document.createElement('input');
+          const title = document.createElement('span');
+
+          checkbox.type = 'checkbox';
+          checkbox.checked = task.completed;
+          checkbox.setAttribute('aria-label', `Complete task: ${task.title || 'empty task'}`);
+          checkbox.addEventListener('change', () => {
+            task.completed = checkbox.checked;
+            renderTasks();
+          });
+
+          title.textContent = task.title || '(empty task)';
+          if (task.completed) title.classList.add('completed');
+
+          item.append(checkbox, title);
+          taskList.append(item);
+        }
+
+        emptyState.hidden = visibleTasks.length > 0;
+        if (tasks.length === 0) {
+          emptyState.textContent = 'No tasks yet.';
+        } else if (visibleTasks.length === 0) {
+          emptyState.textContent = 'No tasks match this filter.';
+        }
+      }
+    </script>
+  </body>
+</html>
